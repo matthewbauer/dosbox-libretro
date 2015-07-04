@@ -1,6 +1,10 @@
 DEBUG=0
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
+ifneq ($(EMSCRIPTEN),)
+	platform = emscripten
+endif
+
 UNAME=$(shell uname -a)
 
 ifeq ($(platform),)
@@ -42,12 +46,12 @@ endif
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    LDFLAGS += -shared -Wl,--version-script=libretro/link.T
-   
+
    fpic = -fPIC
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    LDFLAGS += -dynamiclib
-   
+
    fpic = -fPIC
 	ifeq ($(arch),ppc)
 		COMMONFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__
@@ -74,7 +78,7 @@ else ifeq ($(platform), ios)
 
    CC = clang -arch armv7 -isysroot $(IOSSDK)
    CXX = clang++ -arch armv7 -isysroot $(IOSSDK)
-	COMMONFLAGS += -DIOS 
+	COMMONFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 	ifeq ($(OSX_LT_MAVERICKS),"YES")
@@ -103,12 +107,12 @@ else ifeq ($(platform), qnx)
    PLATFORM_DEFINES := -D__BLACKBERRY_QNX__ -fexceptions -marm -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp
 else ifeq ($(platform), android)
    TARGET := $(TARGET_NAME)_libretro.so
-   COMMONFLAGS += -fpermissive 
+   COMMONFLAGS += -fpermissive
    LDFLAGS += -shared -Wl,--version-script=libretro/link.T
 
    CC = arm-linux-androideabi-gcc
    CXX = arm-linux-androideabi-g++
-   
+
    fpic = -fPIC
 else ifeq ($(platform), psp1)
    TARGET := $(TARGET_NAME)_libretro_psp1.a
@@ -124,6 +128,8 @@ else ifeq ($(platform), wii)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
    COMMONFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -D__POWERPC__ -D__ppc__ -DWORDS_BIGENDIAN=1
 	STATIC_LINKING = 1
+else ifeq ($(platform), emscripten)
+	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 else
    CXXFLAGS += -mno-ms-bitfields
    TARGET := $(TARGET_NAME)_libretro.dll
@@ -133,7 +139,7 @@ endif
 ifeq ($(DEBUG), 1)
 COMMONFLAGS += -O0 -g
 else
-COMMONFLAGS += -O3 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\" 
+COMMONFLAGS += -O3 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
 CORE_DIR    := .
